@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 const path = require('path');
 const childProcess = require('child_process');
 const semver = require('semver');

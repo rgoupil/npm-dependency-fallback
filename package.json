@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "repository": "https://github.com/rgoupil/npm-dependency-fallback",
-  "main": "index.js",
+  "main": "bin/npm-dependency-fallback.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "patch-release": "npm version patch && npm publish && git push --follow-tags"
+  },
+  "bin": {
+    "npm-dependency-fallback": "bin/npm-dependency-fallback.js"
   },
   "author": "",
   "license": "ISC",
