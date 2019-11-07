@@ -3,7 +3,11 @@
 const path = require('path');
 const childProcess = require('child_process');
 const semver = require('semver');
-const packageJson = require('./package.json');
+const packageJson = require(`${process.env.INIT_CWD}/package.json`);
+
+function print(...str) {
+    console.info('[npm-dependency-fallback]:', ...str);
+}
 
 const missingDependencies = [];
 
@@ -16,18 +20,22 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
     // check if the package exists
     let depPackageJson;
     try {
-        depPackageJson = require(path.join(dependency.name, 'package.json'));
+        depPackageJson = require(path.join(process.env.INIT_CWD, 'node_modules', dependency.name, 'package.json'));
     } catch (e) {}
 
     if (depPackageJson) {
-        // check file: deps
-        const optDependency = packageJson.optionalDependencies && packageJson.optionalDependencies[dependency.name];
-        if (optDependency.version.startsWith('file:')) {
+        const optDependencyVersion = packageJson.optionalDependencies && packageJson.optionalDependencies[dependency.name];
+        if (!optDependencyVersion) {
             continue;
         }
 
-        // check URL and git:
-        if (['http://', 'https://', 'git://', 'git+ssh://', 'git+http://', 'git+https://'].some(prefix => optDependency.version.startsWith(prefix))) {
+        // check "file:" deps
+        if (optDependencyVersion.startsWith('file:')) {
+            continue;
+        }
+
+        // check "URL" and "git:"
+        if (['http://', 'https://', 'git://', 'git+ssh://', 'git+http://', 'git+https://'].some(prefix => optDependencyVersion.startsWith(prefix))) {
             continue;
         }
 
@@ -40,6 +48,9 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
     missingDependencies.push(dependency);
 }
 
-const cmd = `npm install --no-save ${missingDependencies.map(d => `${d.name}@${d.version}`).join(' ')}`;
-console.info('executing:', cmd);
-childProcess.execSync(cmd);
+if (missingDependencies.length > 0) {
+    const dependenciesStr = missingDependencies.map(d => `${d.name}@${d.version}`).join(' ');
+    print(`installing ${dependenciesStr}...`);
+    childProcess.execSync(`npm install --no-save ${dependenciesStr}`);
+    print('done !');
+}
