@@ -1,0 +1,15 @@
+{
+  "name": "npm-dependency-fallback",
+  "version": "1.0.0",
+  "description": "",
+  "repository": "https://github.com/rgoupil/npm-dependency-fallback",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "semver": "^6.3.0"
+  }
+}
