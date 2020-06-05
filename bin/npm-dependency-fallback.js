@@ -10,6 +10,7 @@ function print(...str) {
 }
 
 const missingDependencies = [];
+const isYarn = process.env.npm_config_user_agent.startsWith('yarn');
 
 for (const dependencyName of Object.keys(packageJson.dependencies)) {
     const dependency = {
@@ -51,6 +52,7 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
 if (missingDependencies.length > 0) {
     const dependenciesStr = missingDependencies.map(d => `${d.name}@${d.version}`).join(' ');
     print(`installing ${dependenciesStr}...`);
-    childProcess.execSync(`npm install --no-save ${dependenciesStr}`);
+    const packageManager = isYarn ? 'yarn add' : 'npm install --no-save'
+    childProcess.execSync(`${packageManager} ${dependenciesStr}`);
     print('done !');
 }
