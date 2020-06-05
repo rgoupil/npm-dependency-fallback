@@ -1,6 +1,7 @@
 #! /usr/bin/env node
 
 const path = require('path');
+const fs = require("fs");
 const childProcess = require('child_process');
 const semver = require('semver');
 const packageJson = require(`${process.env.INIT_CWD}/package.json`);
@@ -25,13 +26,29 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
     } catch (e) {}
 
     if (depPackageJson) {
-        const optDependencyVersion = packageJson.optionalDependencies && packageJson.optionalDependencies[dependency.name];
+        let optDependencyVersion;
+        if (isYarn) {
+            optDependencyVersion = packageJson.localDependencies && packageJson.localDependencies[dependency.name];
+        }
+        else {
+            optDependencyVersion = packageJson.optionalDependencies && packageJson.optionalDependencies[dependency.name];
+        }
+
         if (!optDependencyVersion) {
             continue;
         }
 
         // check "file:" deps
         if (optDependencyVersion.startsWith('file:')) {
+            continue;
+        }
+
+        // check "link:" deps
+        if (isYarn && optDependencyVersion.startsWith('link:')) {
+            missingDependencies.push({
+                fromPath: optDependencyVersion.replace('link:', ''),
+                toPath: dependency.name,
+            });
             continue;
         }
 
@@ -46,13 +63,34 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
         }
     }
 
-    missingDependencies.push(dependency);
+    if (!isYarn) {
+        missingDependencies.push(dependency);
+    }
 }
 
 if (missingDependencies.length > 0) {
-    const dependenciesStr = missingDependencies.map(d => `${d.name}@${d.version}`).join(' ');
-    print(`installing ${dependenciesStr}...`);
-    const packageManager = isYarn ? 'yarn add' : 'npm install --no-save'
-    childProcess.execSync(`${packageManager} ${dependenciesStr}`);
+    if (isYarn) {
+        for (dependenciesStr of missingDependencies) {
+            const parsedToPath = dependenciesStr.toPath.split('/');
+            const fromPath = dependenciesStr.fromPath;
+            const toPath = dependenciesStr.toPath;
+            const currentDirectory = process.cwd();
+            const fullPath = `${currentDirectory}/${fromPath}`;
+
+            if (fs.existsSync(fullPath)) {
+                if (parsedToPath.length > 1) {
+                    childProcess.execSync(`mkdir -p ${parsedToPath[0]}`);
+                }
+
+                print(`installing ${parsedToPath}...`);
+                childProcess.execSync(`rm -rf node_modules/${toPath}`);
+                childProcess.execSync(`ln -s ${fullPath} node_modules/${toPath}`);
+            }
+        }
+    } else {
+        const dependenciesStr = missingDependencies.map(d => `${d.name}@${d.version}`).join(' ');
+        print(`npm installing ${dependenciesStr}...`);
+        childProcess.execSync(`npm install --no-save ${dependenciesStr}`);
+    }
     print('done !');
 }
