@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 const path = require('path');
-const fs = require("fs");
+const fs = require('fs');
 const childProcess = require('child_process');
 const semver = require('semver');
 const packageJson = require(`${process.env.INIT_CWD}/package.json`);
