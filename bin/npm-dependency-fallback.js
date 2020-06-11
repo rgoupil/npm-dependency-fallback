@@ -68,7 +68,7 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
         }
     }
 
-    if (!isYarn) {
+    if (packageManager !== 'YARN') {
         missingDependencies.push(dependency);
     }
 }
