@@ -11,7 +11,7 @@ function print(...str) {
 }
 
 const missingDependencies = [];
-const isYarn = process.env.npm_config_user_agent.startsWith('yarn');
+const packageManager = process.env.npm_config_user_agent.startsWith('yarn') ? 'YARN' : 'NPM';
 
 for (const dependencyName of Object.keys(packageJson.dependencies)) {
     const dependency = {
@@ -27,12 +27,17 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
 
     if (depPackageJson) {
         let optDependencyVersion;
-        if (isYarn) {
-            optDependencyVersion = packageJson.localDependencies && packageJson.localDependencies[dependency.name];
+
+        switch (packageManager) {
+            case "YARN":
+                optDependencyVersion = packageJson.localDependencies && packageJson.localDependencies[dependency.name];
+                break;
+            case "NPM":
+            default:
+                optDependencyVersion = packageJson.optionalDependencies && packageJson.optionalDependencies[dependency.name];
+                break;
         }
-        else {
-            optDependencyVersion = packageJson.optionalDependencies && packageJson.optionalDependencies[dependency.name];
-        }
+
 
         if (!optDependencyVersion) {
             continue;
@@ -44,7 +49,7 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
         }
 
         // check "link:" deps
-        if (isYarn && optDependencyVersion.startsWith('link:')) {
+        if (packageManager === 'YARN' && optDependencyVersion.startsWith('link:')) {
             missingDependencies.push({
                 fromPath: optDependencyVersion.replace('link:', ''),
                 toPath: dependency.name,
@@ -69,28 +74,32 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
 }
 
 if (missingDependencies.length > 0) {
-    if (isYarn) {
-        for (dependenciesStr of missingDependencies) {
-            const parsedToPath = dependenciesStr.toPath.split('/');
-            const fromPath = dependenciesStr.fromPath;
-            const toPath = dependenciesStr.toPath;
-            const currentDirectory = process.cwd();
-            const fullPath = `${currentDirectory}/${fromPath}`;
+    switch (packageManager) {
+        case "YARN":
+            for (dependenciesStr of missingDependencies) {
+                const parsedToPath = dependenciesStr.toPath.split('/');
+                const fromPath = dependenciesStr.fromPath;
+                const toPath = dependenciesStr.toPath;
+                const currentDirectory = process.cwd();
+                const fullPath = `${currentDirectory}/${fromPath}`;
 
-            if (fs.existsSync(fullPath)) {
-                if (parsedToPath.length > 1) {
-                    childProcess.execSync(`mkdir -p ${parsedToPath[0]}`);
+                if (fs.existsSync(fullPath)) {
+                    if (parsedToPath.length > 1) {
+                        childProcess.execSync(`mkdir -p ${parsedToPath[0]}`);
+                    }
+
+                    print(`installing ${parsedToPath}...`);
+                    childProcess.execSync(`rm -rf node_modules/${toPath}`);
+                    childProcess.execSync(`ln -s ${fullPath} node_modules/${toPath}`);
                 }
-
-                print(`installing ${parsedToPath}...`);
-                childProcess.execSync(`rm -rf node_modules/${toPath}`);
-                childProcess.execSync(`ln -s ${fullPath} node_modules/${toPath}`);
             }
-        }
-    } else {
-        const dependenciesStr = missingDependencies.map(d => `${d.name}@${d.version}`).join(' ');
-        print(`npm installing ${dependenciesStr}...`);
-        childProcess.execSync(`npm install --no-save ${dependenciesStr}`);
+            break;
+        case "NPM":
+        default:
+            const dependenciesStr = missingDependencies.map(d => `${d.name}@${d.version}`).join(' ');
+            print(`npm installing ${dependenciesStr}...`);
+            childProcess.execSync(`npm install --no-save ${dependenciesStr}`);
+            break;
     }
     print('done !');
 }
