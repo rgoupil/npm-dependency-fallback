@@ -84,13 +84,17 @@ if (missingDependencies.length > 0) {
                 const fullPath = `${currentDirectory}/${fromPath}`;
 
                 if (fs.existsSync(fullPath)) {
+                    const cmds = [];
+
                     if (parsedToPath.length > 1) {
-                        childProcess.execSync(`mkdir -p ${parsedToPath[0]}`);
+                        cmds.push(`mkdir -p ${parsedToPath[0]}`);
                     }
 
+                    cmds.push(`rm -rf node_modules/${toPath}`);
+                    cmds.push(`ln -s ${fullPath} node_modules/${toPath}`);
+
                     print(`installing ${parsedToPath}...`);
-                    childProcess.execSync(`rm -rf node_modules/${toPath}`);
-                    childProcess.execSync(`ln -s ${fullPath} node_modules/${toPath}`);
+                    childProcess.execSync(cmds.join('; '));
                 }
             }
             break;
