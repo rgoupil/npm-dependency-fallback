@@ -76,7 +76,7 @@ for (const dependencyName of Object.keys(packageJson.dependencies)) {
 if (missingDependencies.length > 0) {
     switch (packageManager) {
         case "YARN":
-            for (dependenciesStr of missingDependencies) {
+            for (const dependenciesStr of missingDependencies) {
                 const parsedToPath = dependenciesStr.toPath.split('/');
                 const fromPath = dependenciesStr.fromPath;
                 const toPath = dependenciesStr.toPath;
