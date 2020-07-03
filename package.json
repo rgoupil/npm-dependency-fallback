@@ -1,6 +1,6 @@
 {
   "name": "npm-dependency-fallback",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "repository": "https://github.com/rgoupil/npm-dependency-fallback",
   "main": "bin/npm-dependency-fallback.js",
